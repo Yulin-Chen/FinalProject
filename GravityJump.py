@@ -124,7 +124,7 @@ class Character():
         if self.x < 0:
             self.x = screen_width
 
-    def scroll_detection(self):
+    def scroll_detection(self, other):
         if self.delta_y > 0:
             map.scroll = 0
         else:
@@ -132,10 +132,12 @@ class Character():
                 map.scroll = map.scroll_point - self.y
                 self.y = map.scroll_point
                 map.move_map()
+                other.opponent_scroll_detection()
 
     def opponent_scroll_detection(self):
         if map.scroll != 0 and self.y > map.scroll_point:
             self.y += map.scroll
+            self.draw_character()
 
 
     def collision_detection(self, obj_list):
@@ -155,13 +157,15 @@ class Character():
             #Starts a new jump
             self.v = -60
 
-    def run_character(self):
-        """Run character functions"""
+    def run_character(self,other):
+        """Run character functions
+
+        other = other character name
+        """
         self.draw_character()
         self.move()
         self.boundry_detection()
-        self.scroll_detection()
-        self.opponent_scroll_detection()
+        self.scroll_detection(other)
         self.collision_detection(map.plat_obj)
 
 
@@ -264,8 +268,8 @@ while not done:
     tick = clock.tick(60)
 
     map.run_map()
-    blue.run_character()
-    red.run_character()
+    blue.run_character(red)
+    red.run_character(blue)
 
 
     #Update the screen
