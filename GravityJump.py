@@ -33,11 +33,6 @@ done = False
 # Used to manage how fast the screen updates
 clock = pg.time.Clock()
 
-#Keeps track of the platform objects
-plat_obj_list = []
-#Keeps track of the platforms location rectangles
-plat_rect_list = []
-
 
 class Platform:
     """Create a new platform
@@ -50,10 +45,10 @@ class Platform:
         #This will later be changed to a more visually appealing platform
         self.plat = pg.Surface((self.width, self.height))
         self.plat.fill(LUSHGREEN)
-        self.initialized = False
+
 
     def draw_platform(self, x, y):
-        """ Draw a platform and add its location rectangle to the list of platform rectangles.
+        """ Blit a platform onto the screen and set the rectangle around it.
 
         Parameters
         ----------
@@ -62,90 +57,15 @@ class Platform:
         y: int
             Y coordinate of center of new platform
         """
-
         self.x = x
         self.y = y
+        self.rect = pg.Rect(self.x  - (self.width/2), self.y - (self.height/2), self.width, self.height)
         # Blits surface to screen
+        self.top = self.rect.top
         screen.blit(self.plat,(self.x  - (self.width/2), self.y - (self.height/2)))
-        if self.initialized == False:
-            plat_rect_list.append(pg.Rect(self.x  - (self.width/2), self.y - (self.height/2), self.width, self.height))
-            self.initialized = True
 
 
-    def update_plat_location(self):
-        """ Updates plat_rect_list with the current position of all the platforms """
-        for rect in plat_rect_list:
-            rect = pg.Rect(self.x  - (self.width/2), self.y - (self.height/2), self.width, self.height)
-
-class Map:
-    """Generate new platforms and move the map
-
-
-    End goal:
-    New platforms are generated semi-randomly in relation to eachother. They are added and removed
-    from the platform objects list as they appear and exit the screen. Platforms and sprites move
-    downward in sychronism as sprites advance through the game to give the illusion of a upward
-    scrolling motion.
-    """
-
-    def __init__(self):
-        #Verticle distance between platforms
-        self.spacing = 30
-
-    def initialize(self):
-        """Set starting screen with platforms.
-
-        Predetermined Y coordinates for each but random X coordinates.
-        """
-        for num in range(100,900,100):
-            self.generate_plat(num)
-
-
-    def proximity_check(self):
-        """Check if there is slef.spacing distance between the top platform and the top of the screen"""
-        if plat_obj_list[-1].top < self.spacing:
-            return False
-        else:
-            return True
-
-    def off_the_edge(self):
-        """Check if a platform is off the bottom of the screen and remove it from the list if so"""
-        if plat_obj_list[0].top > screen_height:
-            plat_obj_list.remove(plat_obj_list[0])
-
-
-    def generate_plat(self, y):
-        """Create new platform object at specified Y coordinate
-
-        Append platform object to platform object list. Draw the new platform on the screen.
-
-        Parameter
-        ----------
-        y: int
-            Y coordinate of center of new platform
-        """
-
-        plat = Platform()
-        plat_obj_list.append(plat)
-        plat.draw_platform(random.randint(0,screen_width),y)
-
-    def move_map(self):
-        """ This function is just to assist in debugging and testing.
-        Ultimately the map will move as a function of the highest sprite's position
-        and velocity so that the sprite's never move up and off the map"""
-
-        if pg.key.get_pressed()[pg.K_DOWN]:
-            for plat in plat_obj_list:
-                plat.y += 5
-
-    def run_map(self):
-        """Run it all"""
-        self.move_map()
-        self.generate_plat()
-        self.off_the_edge()
-
-
-class Character:
+class Character():
     """Build character
 
     Create and add character to screen. Set constant jump. Move with arrow keys.
@@ -154,98 +74,176 @@ class Character:
     End Goal:
     Currently the characters are represented as square surfaces. This will be changed to animated sprites.
     """
-    def __init__(self):
-        self.x = 350
-        self.y = 580
+
+    def __init__(self, color, left, right, x = 150, y = 825):
+        self.left = left
+        self.right = right
+        self.x = x
+        self.y = y
         self.size = 40
-        self.g = 9.81
         self.v = -60
+        self.g = 9.81
         self.delta_y = 0
-        self.falling = False
-
-
-    def draw_sqr(self):
-        """ Draw surface to represent character. Create collision detection collider underneath
-        character. Also update state is collision is detected.
-
-        End Goal:
-        This is a very messy func, it will be improved and sorted into logical functions.
-        """
-        #Coliider rect created under character
-        self.bottom_collider = pg.Rect(self.x-(self.size/2), self.y + (self.size/2), self.size, 5)
-        #If sprite collides AND is moving downwards a collision reaction is triggered
-        if self.collision_detection() and self.delta_y > 0:
-            #Pulls character to platform before next jump to avoid jumping on 'air' because collider extends below character
-            self.y = (plat_rect_list[self.index].top) - (self.size/2)
-            self.v = -60
-        #Draw and blit character to screen
         self.surf = pg.Surface((self.size,self.size))
-        self.surf.fill(RED)
+        self.surf.fill(color)
+
+
+    def draw_character(self):
+        """ Blit surface that represents character. """
+        #Draw and blit character to screen
         screen.blit(self.surf,(self.x - 20, self.y - 20))
 
-
     def jump(self):
-        """Calculate change in y during jump and update y
-        """
+        """Calculate change in y during jump and update y """
         #This sets the time step for each calculation
         time = tick/90
         self.delta_y = self.v * time + 0.5 * self.g * math.pow(time, 2)
         self.v = self.v + time * self.g
         self.y += self.delta_y
 
+    def move(self):
+        """ Move character according to user input."""
+        #Constant jumping
+        self.jump()
+        #Left,Right controls
+        if pg.key.get_pressed()[self.left]:
+            self.x += -4
+        if pg.key.get_pressed()[self.right]:
+            self.x += 4
 
-    def collision_detection(self):
-        """Check character position and react according to special cases.
+    def boundry_detection(self):
+        """ Detect screen boundries and adjust accordingly.
 
         If the character falls off the bottom they reappear at the top. If they go
-        off a side they loop to the other side. This also detects collisions with
-        platforms.
-
-        End Goal:
-        In the final program, falling off the botrtom is game over.
+        off a side they loop to the other side.
         """
         if self.y > screen_height:
-            self.y = 0
+            self.y = 400
         if self.x > screen_width:
             self.x = 0
         if self.x < 0:
             self.x = screen_width
 
-        #Checks if characters collider is in collision with a platform
-        if self.bottom_collider.collidelist(plat_rect_list) != -1:
-            self.index = self.bottom_collider.collidelist(plat_rect_list)
-            return True
+    def scroll_detection(self):
+        if self.delta_y > 0:
+            map.scroll = 0
         else:
-            return False
+            if self.y <= map.scroll_point:
+                map.scroll = map.scroll_point - self.y
+                self.y = map.scroll_point
+                map.move_map()
+
+    def opponent_scroll_detection(self):
+        if map.scroll != 0 and self.y > map.scroll_point:
+            self.y += map.scroll
 
 
-    def move(self):
-        """ Move charaacter according to user input."""
-        #Constant jumping
-        self.jump()
-        #Left,Right controls
-        if pg.key.get_pressed()[pg.K_LEFT]:
-            self.x += -4
-        if pg.key.get_pressed()[pg.K_RIGHT]:
-            self.x += 4
+    def collision_detection(self, obj_list):
+        """Checks for collison with platforms and adjusts accordingly. """
+        #Creates a list of platform location using their rectangles
+        rect_list = []
+        for obj in obj_list:
+            rect_list.append(obj.rect)
+        #Collider rect created under character
+        self.bottom_collider = pg.Rect(self.x-(self.size/2), self.y + (self.size/2), self.size, 5)
+        #Checks for collision and, if so, records which platform was collided with
+        self.current_plat = self.bottom_collider.collidelist(rect_list)
+        #Checks which platform was collided with and if the character is falling
+        if self.current_plat != -1 and self.delta_y > 0:
+            #Places character on top of platform it collided with
+            self.y = (rect_list[self.current_plat].top) - (self.size/2)
+            #Starts a new jump
+            self.v = -60
 
-
-    def update_state(self):
-        """ Update location of collider"""
-        self.bottom_collider = pg.Rect(self.x-20, self.y + 18, 40, 5)
-
-
-    def create_character(self):
-        """Run character actions"""
-        self.draw_sqr()
+    def run_character(self):
+        """Run character functions"""
+        self.draw_character()
         self.move()
-        
+        self.boundry_detection()
+        self.scroll_detection()
+        self.opponent_scroll_detection()
+        self.collision_detection(map.plat_obj)
+
+
+class Map:
+    """Generate new platforms as character moves up
+
+    """
+    def __init__(self):
+        #Verticle distance between platforms at start
+        self.spacing = 30
+        #Point at which the screen scrolls
+        self.scroll_point = 200
+        self.scroll = 0
+        self.plat_obj = []
+
+    def initialize(self):
+        """Set starting screen with platforms.
+
+        Two set platforms for character starting positions. Predetermined Y coordinates
+        for rest of platforms but random X coordinates.
+        """
+        self.generate_plat(150, 850)
+        self.generate_plat(450, 850)
+        for num in range(50,850,50):
+            self.generate_plat(random.randint(0 ,screen_width), 900 - num)
+
+    def generate_plat(self, x, y):
+        """Create new platform object at specified Y coordinate
+
+        Append platform object to platform object list. Draw the new platform on the screen.
+
+        Parameter
+        ----------
+        y: int
+            Y coordinate of center of new platform
+        x: int
+            X coordinate of center of new platform
+        """
+        plat = Platform()
+        self.plat_obj.append(plat)
+        plat.draw_platform(x,y)
+
+    def draw_map(self):
+        #Iterates through platform list and draws them all
+        for plat in self.plat_obj:
+            plat.draw_platform(plat.x,plat.y)
+
+    def move_map(self):
+        """ Scroll map in relation to character height"""
+        if map.scroll != 0:
+            for plat in self.plat_obj:
+                plat.y += self.scroll
+
+
+    def proximity_check(self):
+        """Check if there is self.spacing distance between the top platform and the top of the screen"""
+        if self.plat_obj[-1].top < self.spacing:
+            return False
+        else:
+            return True
+
+    def off_the_edge(self):
+        """Check if a platform is off the bottom of the screen and remove it from the list if so"""
+        if self.plat_obj[0].top > screen_height:
+            self.plat_obj.remove(self.plat_obj[0])
+
+    def new_plat(self):
+        if self.proximity_check():
+            self.generate_plat(random.randint(0, screen_width),-5)
+
+    def run_map(self):
+        """Run it all"""
+        self.draw_map()
+        self.off_the_edge()
+        self.new_plat()
+
 
 #Create and initialize class objects
 map = Map()
-first_plat = Platform()
 map.initialize()
-red = Character()
+red = Character(RED, pg.K_LEFT, pg.K_RIGHT)
+blue = Character(BLUE, pg.K_a, pg.K_d, 450)
 
 # -------- Main Program Loop -----------
 while not done:
@@ -261,16 +259,14 @@ while not done:
     # Clears old screen
     screen.fill(WHITE)
 
-    #Iterates through platform list and draws them all
-    for plat in plat_obj_list:
-        plat.draw_platform(plat.x,plat.y)
 
     # Limit frames per second
     tick = clock.tick(60)
 
+    map.run_map()
+    blue.run_character()
+    red.run_character()
 
-    first_plat.draw_platform(350, 650)
-    red.create_character()
 
     #Update the screen
     pg.display.flip()
