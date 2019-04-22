@@ -20,7 +20,7 @@ WHITE = (0, 0, 0)
 pg.init()
 
 #Label window
-pg.display.set_caption("Doodle jump")
+pg.display.set_caption("Kangaroo Jump")
 
 # Set the width and height of the screen (width,height)
 screen_width = 600
