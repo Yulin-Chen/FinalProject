@@ -34,9 +34,7 @@ def printtext(font,text,x,y,color):
    img=font.render(text,True,color)
    screen.blit(img,(x,y))
 
-def draw_button(posx,posy,height,width,text,color):
-    pg.draw.rect(screen,color,(posx,posy,width,height))
-    printtext(font1,text,posx+width/2, posy+width/2,VELVET)
+
 # Audio Elements
 jump_sound = pg.mixer.Sound('sprites/Sounds/jump.wav')
 die_sound = pg.mixer.Sound('sprites/Sounds/die.wav')
@@ -195,6 +193,10 @@ class Character():
         if pg.key.get_pressed()[self.right]:
             self.x += 4
 
+    def draw_button(self,posx,posy,height,width,text,color):
+        self.button = pg.draw.rect(screen,color,(posx,posy,width,height))
+        printtext(font1,text,posx+width/2, posy,VELVET)
+
     def gameover(self):
         if self.color == BLUE:
             winner = 'Red'
@@ -206,7 +208,7 @@ class Character():
 
         printtext(font3,"GAMEOVER",75,300,winnercolor)
         printtext(font3,winner +" "+"Wins!!",75,500,winnercolor)
-        draw_button(200,650,10,30,'press to restart', WHITE)
+        self.draw_button(210,700,30,160,'press to restart', ORANGE)
 
 
         pg.display.update()
