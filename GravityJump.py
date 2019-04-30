@@ -258,9 +258,14 @@ class Map:
         self.generate_plat(150, 850)
         self.generate_plat(450, 850)
         for num in range(100,900,50):
-            self.generate_plat(random.randint(0 ,screen_width), 900 - num)
-            if random.randint(0,4) == 4:
-                self.generate_plat(random.randint(0 ,screen_width), 900 - num)
+            rando_placement = random.randint(15, screen_width -15)
+            self.generate_plat(rando_placement, 900 - num)
+            if random.randint(1,4) == 4:
+                second_rando = random.randint(15 ,screen_width-15)
+                while abs(rando_placement - second_rando) <= 60:
+                    second_rando = random.randint(15,screen_width-15)
+                self.generate_plat(second_rando, 900 - num)
+
 
     def generate_plat(self, x, y):
         """Create new platform object at specified Y coordinate
@@ -304,9 +309,14 @@ class Map:
 
     def new_plat(self):
         if self.proximity_check():
-            self.generate_plat(random.randint(0, screen_width),-5)
+            rando_placement = random.randint(15, screen_width-15)
+            self.generate_plat(rando_placement,-5)
             if random.randint(1,3) == 1:
-                self.generate_plat(random.randint(0,screen_width),-5)
+                second_rando = random.randint(15,screen_width-15)
+                while abs(rando_placement - second_rando) <= 60:
+                    second_rando = random.randint(15,screen_width-15)
+                self.generate_plat(second_rando,-5)
+
 
     def score_board(self):
         red_text = '%s has %d points!' % (red.name, red.score)
