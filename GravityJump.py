@@ -163,7 +163,7 @@ class Character():
         for obj in obj_list:
             rect_list.append(obj.rect)
         #Collider rect created under character
-        self.bottom_collider = pg.Rect(self.x-(self.size/2), self.y + (self.size/2), self.size, 5)
+        self.bottom_collider = pg.Rect(self.x-(self.size/2), self.y + (self.size/2), self.size, self.delta_y)
         #Checks for collision and, if so, records which platform was collided with
         self.current_plat = self.bottom_collider.collidelist(rect_list)
         #Checks which platform was collided with and if the character is falling
