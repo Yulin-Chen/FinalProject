@@ -90,9 +90,6 @@ class Character():
         self.surf = pg.Surface((self.size,self.size))
         self.surf.fill(self.color)
         self.score = score
-        self.babykangas = []
-        self.pouch = 2
-        self.lives = 3
 
 
     def draw_character(self):
@@ -117,10 +114,6 @@ class Character():
             self.x += -5
         if pg.key.get_pressed()[self.right]:
             self.x += 5
-        """if pg.key.get_pressed()[self.fire] and len(self.babykangas) == 0:
-            babykanga = BabyKanga(self.x,self.y)
-            self.babykangas.append(babykanga)
-            self.pouch -= 1"""
 
 
     def boundry_detection(self,other):
@@ -175,20 +168,6 @@ class Character():
             #initiates falling function
             obj_list.remove(obj_list[self.current_plat])
 
-    def pouch_detection(self, other):
-        location_rect = self.surf.get_rect(center=(self.x,self.y))
-        if location_rect.collidelist(other.babykangas):
-            self.pouch +=  1
-            self.lives -= 1
-            if self.lives == 0:
-                other.score += 1
-                map.reset()
-
-    def idk(self):
-        if self.babykangas[0].y <= 0:
-            self.babykangas.remove(self.babykangas[0])
-
-
     def run_character(self,other):
         """Run character functions
 
@@ -198,43 +177,8 @@ class Character():
         self.move()
         self.boundry_detection(other)
         self.scroll_detection(other)
-        #self.pouch_detection(other)
         self.collision_detection(map.plat_obj)
 
-class BabyKanga:
-
-        #Initialize babykanga instance.(Tank instance firing, opponent's Tank instance)
-    def __init__(self, kangx,kangy, name='joey'):
-        self.x = kangx
-        self.y = kangy
-        self.mother = name
-        self.vert_speed = 9
-        self.v = -60
-        self.g = 9.81
-        self.delta_y = 0
-        self.where = True
-
-        #Draws babykanga
-    def draw_babykanga(self):
-        pg.draw.rect(screen, DRIEDBLOOD, (self.x, self.y, 4, 8), 0)
-        self.trajectory2()
-        self.rect = pg.Rect(self.x, self.y, 4, 4)
-
-    def trajectory2(self):
-        self.y -= 8
-
-    def trajectory1(self):
-        if self.where == True and self.y >= 250:
-            self.y -= self.vert_speed
-        else:
-            #change sprite
-            time = tick/40
-            self.delta_y = self.v * time + 0.5 * self.g * math.pow(time, 2)
-            self.v = self.v + time * self.g
-            self.y += self.delta_y
-            self.where = False
-            if self.delta_y >= 0:
-                self.x = self.mother.x
 
 
 class Map:
@@ -326,13 +270,6 @@ class Map:
         blue_score = font.render(blue_text, False, blue.color, GREY)
         screen.blit(blue_score,(30,20))
 
-        """red_lives = '%s lives: %d' % (red.name, red.lives)
-        red_life_text = font.render(red_lives, False, red.color, GREY)
-        screen.blit(red_life_text,(360,50))
-        blue_lives = '%s lives: %d' % (blue.name, blue.lives)
-        blue_life_text = font.render(blue_lives, False, blue.color, GREY)
-        screen.blit(blue_life_text,(30,50))"""
-
 
     def reset(self):
         self.__init__()
@@ -372,15 +309,6 @@ while not done:
 
     # Limit frames per second
     tick = clock.tick(60)
-
-
-    for babykanga in red.babykangas:
-        babykanga.draw_babykanga()
-
-    for babykanga in blue.babykangas:
-        babykanga.draw_babykanga()
-
-
 
     map.run_map()
     blue.run_character(red)
