@@ -50,7 +50,7 @@ class Platform:
     #Initialize platform attributes
     def __init__(self):
         self.width = 120
-        self.height = 20
+        self.height = 15
         self.image = pg.image.load('sprites/Platform.PNG')
         self.plat = pg.transform.scale(self.image,(self.width,self.height))
 
@@ -70,7 +70,27 @@ class Platform:
         self.rect = pg.Rect(self.x  - (self.width/2), self.y - (self.height/2), self.width, self.height)
         # Blits surface to screen
         self.top = self.rect.top
+        self.position = self.top - int(self.height/2)
         screen.blit(self.plat,(self.x  - (self.width/2), self.y - (self.height/2)))
+
+class Portal:
+    """Creates portal sprites. These switch the two kangaroos locations.
+
+    """
+    def __init__(self):
+        self.size = 30
+        self.surf = pg.Surface((self.size,self.size))
+        self.surf.fill(MAGENTA)
+
+    def draw_portal(self, x, y):
+        """ Blit surface that represents character. """
+        self.x = x
+        self.y = y
+        self.rect = pg.Rect(self.x  - (self.size/2), self.y - (self.size/2), self.size, self.size)
+
+        #Draw and blit character to screen
+        screen.blit(self.surf,(self.x - self.size/2, self.y - self.size/2))
+
 
 class Character():
     """Build character
@@ -244,24 +264,6 @@ class Character():
         self.collision_detection(map.plat_obj)
         self.portal_detection(map.portal_obj,other)
 
-class Portal:
-    """Creates portal sprites. These switch the two kangaroos locations.
-
-    """
-    def __init__(self):
-        self.size = 30
-        self.surf = pg.Surface((self.size,self.size))
-        self.surf.fill(MAGENTA)
-
-    def draw_portal(self, x, y):
-        """ Blit surface that represents character. """
-        self.x = x
-        self.y = y
-        self.rect = pg.Rect(self.x  - (self.size/2), self.y - (self.size/2), self.size, self.size)
-
-        #Draw and blit character to screen
-        screen.blit(self.surf,(self.x - self.size/2, self.y - self.size/2))
-
 
 class Map:
     """Generate new platforms as character moves up
@@ -269,7 +271,7 @@ class Map:
     """
     def __init__(self):
         #Verticle distance between platforms at start
-        self.spacing = 30
+        self.spacing = 50
         #Point at which the screen scrolls
         self.scroll_point = 200
         self.scroll = 0
@@ -286,14 +288,29 @@ class Map:
         """
         self.generate_plat(150, 850)
         self.generate_plat(450, 850)
-        for num in range(100,900,50):
-            rando_placement = random.randint(15, screen_width -15)
-            self.generate_plat(rando_placement, 900 - num)
-            if random.randint(1,4) == 4:
-                second_rando = random.randint(15 ,screen_width-15)
-                while abs(rando_placement - second_rando) <= 60:
-                    second_rando = random.randint(15,screen_width-15)
-                self.generate_plat(second_rando, 900 - num)
+        for num in range(100,900,self.spacing):
+            self.plats_at_height(900-num,4)
+
+    def plats_at_height(self, x, freq_double_plats):
+        """Create new platform object at specified Y coordinate
+
+        Append platform object to platform object list. Draw the new platform on the screen.
+
+        Parameter
+        ----------
+        x: int
+            X coordinate of center of new platform
+        freq_double_plats: int
+            1 in int chance of double plat at given x height
+        """
+        rando_placement = random.randint(15, screen_width -15)
+        self.generate_plat(rando_placement, x)
+        if random.randint(1,freq_double_plats) == 1:
+            second_rando = random.randint(15 ,screen_width-15)
+            while abs(rando_placement - second_rando) <= 120:
+                second_rando = random.randint(15,screen_width-15)
+            self.generate_plat(second_rando, x)
+
 
 
     def generate_plat(self, x, y):
@@ -330,7 +347,7 @@ class Map:
 
     def proximity_check(self):
         """Check if there is self.spacing distance between the top platform and the top of the screen"""
-        if self.plat_obj[-1].top < self.spacing:
+        if self.plat_obj[-1].position < self.spacing -10:
             return False
         else:
             return True
@@ -346,13 +363,9 @@ class Map:
 
     def new_plat(self):
         if self.proximity_check():
-            rando_placement = random.randint(15, screen_width-15)
-            self.generate_plat(rando_placement,-5)
-            if random.randint(1,3) == 1:
-                second_rando = random.randint(15,screen_width-15)
-                while abs(rando_placement - second_rando) <= 60:
-                    second_rando = random.randint(15,screen_width-15)
-                self.generate_plat(second_rando,-5)
+            self.plats_at_height(-10, 4)
+
+
 
 
     def generate_portal(self):
