@@ -82,7 +82,7 @@ class Character():
     Currently the characters are represented as square surfaces. This will be changed to animated sprites.
     """
 
-    def __init__(self,name, color, left, right, sprite_file, x = 150, y = 825, score=0):
+    def __init__(self,name, color, left, right, sprite_num, x = 150, y = 825, score=0):
         self.name = name
         self.color = color
         self.left = left
@@ -93,15 +93,22 @@ class Character():
         self.v = -60
         self.g = 9.81
         self.delta_y = 0
-        self.image = pg.image.load('sprites/%s.png' % sprite_file)
-        self.surf = pg.transform.scale(self.image,(self.size,self.size))
+        self.imageR = pg.image.load('sprites/Kanga%dR.png' % sprite_num)
+        self.imageL = pg.image.load('sprites/Kanga%dL.png' % sprite_num)
+        self.spriteR = pg.transform.scale(self.imageR,(self.size,self.size))
+        self.spriteL = pg.transform.scale(self.imageL,(self.size,self.size))
+        self.going_right = True
         self.score = score
 
 
     def draw_character(self):
         """ Blit surface that represents character. """
         #Draw and blit character to screen
-        screen.blit(self.surf,(self.x - 20, self.y - 20))
+        if self.going_right:
+            sprite = self.spriteR
+        else:
+            sprite = self.spriteL
+        screen.blit(sprite,(self.x - 20, self.y - 20))
 
     def jump(self):
         """Calculate change in y during jump and update y """
@@ -118,8 +125,10 @@ class Character():
         #Left,Right controls
         if pg.key.get_pressed()[self.left]:
             self.x += -5
+            self.going_right = False
         if pg.key.get_pressed()[self.right]:
             self.x += 5
+            self.going_right = True
 
     def game_over(self,other):
         losercolor = self.color
@@ -319,7 +328,6 @@ class Map:
             for portal in self.portal_obj:
                 portal.y += self.scroll
 
-
     def proximity_check(self):
         """Check if there is self.spacing distance between the top platform and the top of the screen"""
         if self.plat_obj[-1].top < self.spacing:
@@ -371,8 +379,8 @@ class Map:
     def reset(self):
         self.__init__()
         self.initialize()
-        red.__init__('Red',RED, pg.K_LEFT, pg.K_RIGHT, pg.K_UP,450, score = 0)
-        blue.__init__('Blue', BLUE, pg.K_a, pg.K_d, pg.K_w, score = 0)
+        red.__init__('Red',RED, pg.K_LEFT, pg.K_RIGHT,2, 450, score = 0)
+        blue.__init__('Blue', BLUE, pg.K_a, pg.K_d,1, score = 0)
 
     def run_map(self):
         """Run it all"""
@@ -386,8 +394,8 @@ class Map:
 
 map = Map()
 map.initialize()
-red = Character('Red',RED, pg.K_LEFT, pg.K_RIGHT, 'Kanga2' ,450)
-blue = Character('Blue', BLUE, pg.K_a, pg.K_d, 'Kanga1')
+red = Character('Red',RED, pg.K_LEFT, pg.K_RIGHT, 2 ,450)
+blue = Character('Blue', BLUE, pg.K_a, pg.K_d, 1)
 
 
 
