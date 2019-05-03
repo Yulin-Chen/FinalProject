@@ -2,6 +2,7 @@ import pygame as pg
 import random
 import time
 import math
+import os
 
 #Color presets
 BLACK = (0, 0, 0)
@@ -49,10 +50,9 @@ class Platform:
     #Initialize platform attributes
     def __init__(self):
         self.width = 120
-        self.height = 10
-        #This will later be changed to a more visually appealing platform
-        self.plat = pg.Surface((self.width, self.height))
-        self.plat.fill(LUSHGREEN)
+        self.height = 20
+        self.image = pg.image.load('sprites/Platform.PNG')
+        self.plat = pg.transform.scale(self.image,(self.width,self.height))
 
 
     def draw_platform(self, x, y):
@@ -82,20 +82,19 @@ class Character():
     Currently the characters are represented as square surfaces. This will be changed to animated sprites.
     """
 
-    def __init__(self,name, color, left, right, fire, x = 150, y = 825, score=0):
+    def __init__(self,name, color, left, right, sprite_file, x = 150, y = 825, score=0):
         self.name = name
         self.color = color
         self.left = left
         self.right = right
-        self.fire = fire
         self.x = x
         self.y = y
-        self.size = 40
+        self.size = 60
         self.v = -60
         self.g = 9.81
         self.delta_y = 0
-        self.surf = pg.Surface((self.size,self.size))
-        self.surf.fill(self.color)
+        self.image = pg.image.load('sprites/%s.png' % sprite_file)
+        self.surf = pg.transform.scale(self.image,(self.size,self.size))
         self.score = score
 
 
@@ -203,7 +202,7 @@ class Character():
             #changed
             self.score+=1
             #initiates falling function
-            #del (obj_list[self.current_plat])
+            del (obj_list[self.current_plat])
 
 
     def portal_detection(self,portal_list,other):
@@ -334,14 +333,13 @@ class Map:
             del self.plat_obj[0]
         for portal in self.portal_obj:
             if portal.y > screen_height + 20:
-                del portal
+                self.portal_obj.remove(portal)
                 self.portal_here = False
 
     def new_plat(self):
         if self.proximity_check():
             rando_placement = random.randint(15, screen_width-15)
             self.generate_plat(rando_placement,-5)
-            print(len(self.plat_obj))
             if random.randint(1,3) == 1:
                 second_rando = random.randint(15,screen_width-15)
                 while abs(rando_placement - second_rando) <= 60:
@@ -359,7 +357,7 @@ class Map:
             portal.y = random.randint(-70,-20)
             portal.rect = pg.Rect(portal.x  - (portal.size/2), portal.y - (portal.size/2), portal.size, portal.size)
             self.portal_here = True
-            print(len(self.portal_obj))
+
 
     def score_board(self):
         red_text = '%s has %d points!' % (red.name, red.score)
@@ -388,8 +386,8 @@ class Map:
 
 map = Map()
 map.initialize()
-red = Character('Red',RED, pg.K_LEFT, pg.K_RIGHT, pg.K_UP, 450)
-blue = Character('Blue', BLUE, pg.K_a, pg.K_d, pg.K_w)
+red = Character('Red',RED, pg.K_LEFT, pg.K_RIGHT, 'Kanga2' ,450)
+blue = Character('Blue', BLUE, pg.K_a, pg.K_d, 'Kanga1')
 
 
 
