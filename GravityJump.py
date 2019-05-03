@@ -15,6 +15,7 @@ LUSHGREEN = (0, 158, 26)
 VELVET = (71, 4, 114)
 BLU = (57, 33, 239)
 WHITE = (0, 0, 0)
+MAGENTA = (167, 62, 183)
 
 #Initialize game
 pg.init()
@@ -166,7 +167,26 @@ class Character():
             #Starts a new jump
             self.v = -60
             #initiates falling function
-            obj_list.remove(obj_list[self.current_plat])
+            #del (obj_list[self.current_plat])
+
+
+    def portal_detection(self,portal_list,other):
+        if len(portal_list) == 0:
+            return
+        else:
+            self.rect = pg.Rect(self.x  - (self.size/2), self.y - (self.size/2), self.size, self.size)
+            for portal in portal_list:
+                rect = portal.rect
+            if self.rect.colliderect(rect):
+                tempx = other.x
+                tempy = other.y
+                other.x = self.x
+                other.y = self.y
+                self.x = tempx
+                self. y = tempy
+                del portal_list[0]
+                map.portal_here = False
+
 
     def run_character(self,other):
         """Run character functions
@@ -178,7 +198,25 @@ class Character():
         self.boundry_detection(other)
         self.scroll_detection(other)
         self.collision_detection(map.plat_obj)
+        self.portal_detection(map.portal_obj,other)
 
+class Portal:
+    """Creates portal sprites. These switch the two kangaroos locations.
+
+    """
+    def __init__(self):
+        self.size = 30
+        self.surf = pg.Surface((self.size,self.size))
+        self.surf.fill(MAGENTA)
+
+    def draw_portal(self, x, y):
+        """ Blit surface that represents character. """
+        self.x = x
+        self.y = y
+        self.rect = pg.Rect(self.x  - (self.size/2), self.y - (self.size/2), self.size, self.size)
+
+        #Draw and blit character to screen
+        screen.blit(self.surf,(self.x - self.size/2, self.y - self.size/2))
 
 
 class Map:
@@ -192,6 +230,9 @@ class Map:
         self.scroll_point = 200
         self.scroll = 0
         self.plat_obj = []
+        self.portal_obj = []
+        self.height = screen_height
+        self.portal_here = False
 
     def initialize(self):
         """Set starting screen with platforms.
@@ -231,12 +272,17 @@ class Map:
         #Iterates through platform list and draws them all
         for plat in self.plat_obj:
             plat.draw_platform(plat.x,plat.y)
+        for portal in self.portal_obj:
+            portal.draw_portal(portal.x,portal.y)
 
     def move_map(self):
         """ Scroll map in relation to character height"""
-        if map.scroll != 0:
+        if self.scroll != 0:
+            self.height += self.scroll
             for plat in self.plat_obj:
                 plat.y += self.scroll
+            for portal in self.portal_obj:
+                portal.y += self.scroll
 
 
     def proximity_check(self):
@@ -249,18 +295,35 @@ class Map:
     def off_the_edge(self):
         """Check if a platform is off the bottom of the screen and remove it from the list if so"""
         if self.plat_obj[0].top > screen_height:
-            self.plat_obj.remove(self.plat_obj[0])
+            del self.plat_obj[0]
+        for portal in self.portal_obj:
+            if portal.y > screen_height + 20:
+                del portal
+                self.portal_here = False
 
     def new_plat(self):
         if self.proximity_check():
             rando_placement = random.randint(15, screen_width-15)
             self.generate_plat(rando_placement,-5)
+            print(len(self.plat_obj))
             if random.randint(1,3) == 1:
                 second_rando = random.randint(15,screen_width-15)
                 while abs(rando_placement - second_rando) <= 60:
                     second_rando = random.randint(15,screen_width-15)
                 self.generate_plat(second_rando,-5)
 
+
+    def generate_portal(self):
+        while self.height == screen_height:
+            return
+        if self.portal_here == False and random.randint(0,400) == 7:
+            portal = Portal()
+            self.portal_obj.append(portal)
+            portal.x = random.randint(20, screen_width-20)
+            portal.y = random.randint(-70,-20)
+            portal.rect = pg.Rect(portal.x  - (portal.size/2), portal.y - (portal.size/2), portal.size, portal.size)
+            self.portal_here = True
+            print(len(self.portal_obj))
 
     def score_board(self):
         red_text = '%s has %d points!' % (red.name, red.score)
@@ -282,7 +345,9 @@ class Map:
         self.draw_map()
         self.off_the_edge()
         self.new_plat()
+        self.generate_portal()
         self.score_board()
+
 
 
 map = Map()
@@ -309,6 +374,7 @@ while not done:
 
     # Limit frames per second
     tick = clock.tick(60)
+
 
     map.run_map()
     blue.run_character(red)
