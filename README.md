@@ -16,6 +16,8 @@ Adapted from Doodle Jump, the Kangaroo Jump is a game with 2 kangaroos competing
 
 You will win as soon as the bottom of the screen touches the opponent kangaroo or the life bar of the opponent kangaroo runs out - so jump as high as you can to win!
 
+## Project Website
+https://yulin-chen.github.io/FinalProject/.
 
 ## Installation
 
