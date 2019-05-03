@@ -14,8 +14,7 @@ DRIEDBLOOD = (147, 0, 0)
 LUSHGREEN = (0, 158, 26)
 VELVET = (71, 4, 114)
 BLU = (57, 33, 239)
-WHITE = (0, 0, 0)
-MAGENTA = (167, 62, 183)
+WHITE = (255,255,255)
 
 #Initialize game
 pg.init()
@@ -35,6 +34,12 @@ done = False
 clock = pg.time.Clock()
 
 font = pg.font.SysFont('chandas', 20, True)
+font2 = pg.font.SysFont('stkaiti',120)
+font3 = pg.font.SysFont('stkaiti',60)
+
+def printtext(font,text,x,y,color):
+    img = font.render(text,True,color)
+    screen.blit(img,(x,y))
 
 class Platform:
     """Create a new platform
@@ -116,6 +121,31 @@ class Character():
         if pg.key.get_pressed()[self.right]:
             self.x += 5
 
+    def game_over(self,other):
+        losercolor = self.color
+        winnercolor = other.color
+        screen.fill(WHITE)
+        printtext(font2,"GAMEOVER",75,300,losercolor)
+        printtext(font3, other.name +" "+"Wins!!",200,500,winnercolor)
+        #button("Restart", 210,700,30,160,RED,ORANGE)
+        printtext(font,'%s got %d points' % (other.name, other.score),200,550,other.color)
+        printtext(font,'%s got %d points' % (self.name, self.score),200,600,self.color)
+
+        pg.display.update()
+
+    def button(msg,x,y,w,h,ic,ac):
+        mouse = pygame.mouse.get_pos()
+
+        if x+w > mouse[0] > x and y+h > mouse[1] > y:
+            pygame.draw.rect(gameDisplay, ac,(x,y,w,h))
+        else:
+            pygame.draw.rect(gameDisplay, ic,(x,y,w,h))
+
+        smallText = pygame.font.Font("freesansbold.ttf",20)
+        textSurf, textRect = text_objects(msg, smallText)
+        textRect.center = ( (x+(w/2)), (y+(h/2)) )
+        gameDisplay.blit(textSurf, textRect)
+
 
     def boundry_detection(self,other):
         """ Detect screen boundries and adjust accordingly.
@@ -127,6 +157,9 @@ class Character():
             self.y = 825
             #self.end_screen(other)
             other.score += 1
+            #changed
+            self.game_over(other)
+            pg.time.wait(1000)
             map.reset()
 
         if self.x > screen_width:
@@ -166,6 +199,8 @@ class Character():
             self.y = (rect_list[self.current_plat].top) - (self.size/2)
             #Starts a new jump
             self.v = -60
+            #changed
+            self.score+=1
             #initiates falling function
             #del (obj_list[self.current_plat])
 
@@ -337,8 +372,8 @@ class Map:
     def reset(self):
         self.__init__()
         self.initialize()
-        red.__init__('Red',RED, pg.K_LEFT, pg.K_RIGHT, pg.K_UP,450, score = red.score)
-        blue.__init__('Blue', BLUE, pg.K_a, pg.K_d, pg.K_w, score = blue.score)
+        red.__init__('Red',RED, pg.K_LEFT, pg.K_RIGHT, pg.K_UP,450, score = 0)
+        blue.__init__('Blue', BLUE, pg.K_a, pg.K_d, pg.K_w, score = 0)
 
     def run_map(self):
         """Run it all"""
