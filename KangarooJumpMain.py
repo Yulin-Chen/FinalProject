@@ -78,18 +78,17 @@ class Portal:
 
     """
     def __init__(self):
-        self.size = 30
-        self.surf = pg.Surface((self.size,self.size))
-        self.surf.fill(MAGENTA)
+        self.size = 80
+        self.image = pg.image.load('sprites/portal2.png')
+        self.portal = pg.transform.scale(self.image,(self.size,self.size))
 
     def draw_portal(self, x, y):
         """ Blit surface that represents character. """
         self.x = x
         self.y = y
         self.rect = pg.Rect(self.x  - (self.size/2), self.y - (self.size/2), self.size, self.size)
-
         #Draw and blit character to screen
-        screen.blit(self.surf,(self.x - self.size/2, self.y - self.size/2))
+        screen.blit(self.portal,(self.x - self.size/2, self.y - self.size/2))
 
 
 class Character():
@@ -99,7 +98,7 @@ class Character():
     Detect collisions wih platforms and react appropriatley.
 
     End Goal:
-    Currently the characters are represented as square surfaces. This will be changed to animated sprites.
+    Currently the characters are represented as square surfaces.
     """
 
     def __init__(self,name, color, left, right, sprite_num, x = 150, y = 825, score=0):
@@ -128,7 +127,7 @@ class Character():
             sprite = self.spriteR
         else:
             sprite = self.spriteL
-        screen.blit(sprite,(self.x - 20, self.y - 20))
+        screen.blit(sprite,(self.x - self.size/2, self.y - self.size/2))
 
     def jump(self):
         """Calculate change in y during jump and update y """
@@ -186,7 +185,6 @@ class Character():
             self.y = 825
             #self.end_screen(other)
             other.score += 1
-            #changed
             self.game_over(other)
             pg.time.wait(1000)
             map.reset()
@@ -218,8 +216,12 @@ class Character():
         rect_list = []
         for obj in obj_list:
             rect_list.append(obj.rect)
-        #Collider rect created under character
-        self.bottom_collider = pg.Rect(self.x-(self.size/2), self.y + (self.size/2), self.size, self.delta_y)
+
+        #Collider rect created under character's feet
+        if self.going_right:
+            self.bottom_collider = pg.Rect(int(self.x), self.y + (self.size/2), self.size * 5/12, self.delta_y)
+        else:
+            self.bottom_collider = pg.Rect(int(self.x-(self.size * 4/10)), self.y + (self.size/2), self.size * 5/12, self.delta_y)
         #Checks for collision and, if so, records which platform was collided with
         self.current_plat = self.bottom_collider.collidelist(rect_list)
         #Checks which platform was collided with and if the character is falling
@@ -228,28 +230,23 @@ class Character():
             self.y = (rect_list[self.current_plat].top) - (self.size/2)
             #Starts a new jump
             self.v = -60
-            #changed
             self.score+=1
-            #initiates falling function
-            del (obj_list[self.current_plat])
+            obj_list.remove(obj_list[self.current_plat])
 
 
-    def portal_detection(self,portal_list,other):
-        if len(portal_list) == 0:
+    def portal_detection(self,other):
+        if map.portal_active == False:
             return
         else:
             self.rect = pg.Rect(self.x  - (self.size/2), self.y - (self.size/2), self.size, self.size)
-            for portal in portal_list:
-                rect = portal.rect
-            if self.rect.colliderect(rect):
+            if self.rect.colliderect(portal.rect):
                 tempx = other.x
                 tempy = other.y
                 other.x = self.x
                 other.y = self.y
                 self.x = tempx
                 self. y = tempy
-                del portal_list[0]
-                map.portal_here = False
+                map.portal_active = False
 
 
     def run_character(self,other):
@@ -262,7 +259,7 @@ class Character():
         self.boundry_detection(other)
         self.scroll_detection(other)
         self.collision_detection(map.plat_obj)
-        self.portal_detection(map.portal_obj,other)
+        self.portal_detection(other)
 
 
 class Map:
@@ -278,7 +275,7 @@ class Map:
         self.plat_obj = []
         self.portal_obj = []
         self.height = screen_height
-        self.portal_here = False
+        self.portal_active = False
 
     def initialize(self):
         """Set starting screen with platforms.
@@ -289,7 +286,7 @@ class Map:
         self.generate_plat(150, 850)
         self.generate_plat(450, 850)
         for num in range(100,900,self.spacing):
-            self.plats_at_height(900-num,4)
+            self.plats_at_height(900-num,3)
 
     def plats_at_height(self, x, freq_double_plats):
         """Create new platform object at specified Y coordinate
@@ -333,7 +330,7 @@ class Map:
         #Iterates through platform list and draws them all
         for plat in self.plat_obj:
             plat.draw_platform(plat.x,plat.y)
-        for portal in self.portal_obj:
+        if self.portal_active:
             portal.draw_portal(portal.x,portal.y)
 
     def move_map(self):
@@ -342,12 +339,12 @@ class Map:
             self.height += self.scroll
             for plat in self.plat_obj:
                 plat.y += self.scroll
-            for portal in self.portal_obj:
+            if self.portal_active:
                 portal.y += self.scroll
 
     def proximity_check(self):
         """Check if there is self.spacing distance between the top platform and the top of the screen"""
-        if self.plat_obj[-1].position < self.spacing -10:
+        if self.plat_obj[-1].position < self.spacing-20:
             return False
         else:
             return True
@@ -355,29 +352,23 @@ class Map:
     def off_the_edge(self):
         """Check if a platform is off the bottom of the screen and remove it from the list if so"""
         if self.plat_obj[0].top > screen_height:
-            del self.plat_obj[0]
-        for portal in self.portal_obj:
-            if portal.y > screen_height + 20:
-                self.portal_obj.remove(portal)
-                self.portal_here = False
+             self.plat_obj.remove(self.plat_obj[0])
+        if self.portal_active and portal.y > screen_height + portal.size:
+            self.portal_active = False
 
     def new_plat(self):
         if self.proximity_check():
-            self.plats_at_height(-10, 4)
-
-
+            self.plats_at_height(-10, 3)
 
 
     def generate_portal(self):
         while self.height == screen_height:
             return
-        if self.portal_here == False and random.randint(0,400) == 7:
-            portal = Portal()
-            self.portal_obj.append(portal)
+        if not self.portal_active and random.randint(0,300) == 7:
+            self.portal_active = True
             portal.x = random.randint(20, screen_width-20)
             portal.y = random.randint(-70,-20)
             portal.rect = pg.Rect(portal.x  - (portal.size/2), portal.y - (portal.size/2), portal.size, portal.size)
-            self.portal_here = True
 
 
     def score_board(self):
@@ -407,6 +398,7 @@ class Map:
 
 map = Map()
 map.initialize()
+portal = Portal()
 red = Character('Red',RED, pg.K_LEFT, pg.K_RIGHT, 2 ,450)
 blue = Character('Blue', BLUE, pg.K_a, pg.K_d, 1)
 
