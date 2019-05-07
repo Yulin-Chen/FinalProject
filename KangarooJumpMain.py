@@ -228,14 +228,14 @@ class Character():
 
 
     def button(msg,x,y,w,h,ic,ac):
-        mouse = pygame.mouse.get_pos()
+        mouse = pg.mouse.get_pos()
 
         if x+w > mouse[0] > x and y+h > mouse[1] > y:
-            pygame.draw.rect(gameDisplay, ac,(x,y,w,h))
+            pg.draw.rect(gameDisplay, ac,(x,y,w,h))
         else:
-            pygame.draw.rect(gameDisplay, ic,(x,y,w,h))
+            pg.draw.rect(gameDisplay, ic,(x,y,w,h))
 
-        smallText = pygame.font.Font("freesansbold.ttf",20)
+        smallText = pg.font.Font("freesansbold.ttf",20)
         textSurf, textRect = text_objects(msg, smallText)
         textRect.center = ( (x+(w/2)), (y+(h/2)) )
         gameDisplay.blit(textSurf, textRect)
@@ -458,6 +458,48 @@ class Map:
             portal.y = random.randint(-70,-20)
             portal.rect = pg.Rect(portal.x  - (portal.size/2), portal.y - (portal.size/2), portal.size, portal.size)
 
+<<<<<<< HEAD
+=======
+
+    def score_board(self):
+        red_text = '%s has %d points!' % (red.name, red.score)
+        red_score = font.render(red_text, False, red.color, GREY)
+        screen.blit(red_score,(360,20))
+        blue_text = '%s has %d points!' % (blue.name, blue.score)
+        blue_score = font.render(blue_text, False, blue.color, GREY)
+        screen.blit(blue_score,(30,20))
+
+    def paused(self):
+
+        largeText = pg.font.SysFont("comicsansms",115)
+        # TextSurf, TextRect = text_objects("Paused", largeText)
+        # TextRect.center = ((display_width/2),(display_height/2))
+        # gameDisplay.blit(TextSurf, TextRect)
+
+
+        while pause:
+            for event in pg.event.get():
+
+                if event.type == pg.QUIT:
+                    pg.quit()
+                    quit()
+
+            screen.fill(WHITE)
+            printtext(largeText,"Paused",75,400,RED)
+
+        #button("Continue",150,450,100,50,green,bright_green,unpause)
+        #button("Quit",550,450,100,50,red,bright_red,quitgame)
+
+            pg.display.update()
+            clock.tick(15)
+
+    def reset(self):
+        self.__init__()
+        self.initialize()
+        red.__init__('Red',RED, pg.K_LEFT, pg.K_RIGHT,2, 450, score = 0)
+        blue.__init__('Blue', BLUE, pg.K_a, pg.K_d,1, score = 0)
+
+>>>>>>> d1655bd02a53d4dce68a919113f7d4e06d487a0b
     def run_map(self):
         """Run it all"""
         self.draw_map()
@@ -505,12 +547,25 @@ class Game:
         self.portal_hit_who()
 
 
+<<<<<<< HEAD
 play = Game()
 map = Map()
 map.initialize()
 portal = Portal()
 fred = Character('Fred',RED, pg.K_LEFT, pg.K_RIGHT, 2 ,450)
 george = Character('George', BLUE, pg.K_a, pg.K_d, 1)
+=======
+map = Map()
+map.initialize()
+portal = Portal()
+red = Character('Player1',RED, pg.K_LEFT, pg.K_RIGHT, 2 ,450)
+blue = Character('Player2', BLUE, pg.K_a, pg.K_d, 1)
+
+
+
+pause = False
+
+>>>>>>> d1655bd02a53d4dce68a919113f7d4e06d487a0b
 
 
 # -------- Main Program Loop -----------
@@ -518,13 +573,26 @@ while not done:
     for event in pg.event.get():
         if event.type == pg.QUIT:
             done = True
-
+        if event.type == pg.KEYDOWN:
+            if event.key == pg.K_p:
+                print('pause')
+                pause = True
+                map.paused()
         #Escape key alternative way to end game
         if event.type == pg.KEYDOWN:
             if event.key == pg.K_ESCAPE:
                 done = True
+<<<<<<< HEAD
             if event.key == pg.K_k:
                 play.reset()
+=======
+        if pause == True:
+
+            if event.type == pg.KEYDOWN:
+                if event.key == pg.K_p:
+                    pause = False
+                    print('resume')
+>>>>>>> d1655bd02a53d4dce68a919113f7d4e06d487a0b
     # Clears old screen
     screen.blit(map.stretched_bg,(0,0))
 
