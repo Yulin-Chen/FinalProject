@@ -570,6 +570,8 @@ while not done:
         printtext(largerText,"Welcome to",80,200,RED)
         printtext(largeText,"Kangaroo Jump",90,300,BLUE)
         printtext(font3,"click anywhere to start", 80, 500,BLACK)
+        fred.draw_character()
+        george.draw_character()
         pg.display.update()
         for event in pg.event.get():
             if event.type == pg.MOUSEBUTTONDOWN:
