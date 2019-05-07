@@ -16,7 +16,8 @@ LUSHGREEN = (0, 158, 26)
 VELVET = (71, 4, 114)
 BLU = (57, 33, 239)
 WHITE = (255,255,255)
-MAGENTA = (169, 69, 178)
+MAGENTA = (160, 15, 196)
+SUNBLEACHEDGRAPE = (206, 132, 224)
 
 #Initialize game
 pg.init()
@@ -36,7 +37,9 @@ done = False
 clock = pg.time.Clock()
 FPS = 60
 
-font = pg.font.SysFont('chandas', 20, True)
+
+font = pg.font.SysFont('stkaiti', 40, True)
+font1 = pg.font.SysFont('stkaiti', 60, True)
 font2 = pg.font.SysFont('stkaiti',120)
 font3 = pg.font.SysFont('stkaiti',60)
 
@@ -93,6 +96,9 @@ class Portal:
         self.teleport_started = False
         self.exit_portalX = 0
         self.exit_portalY = 0
+        self.rect = pg.Rect(self.x  - (self.size/4), self.y - (self.size/4), self.size*1/2, self.size*1/2)
+
+
 
     def draw_portal(self, x, y):
         """ Blit surface that represents character. """
@@ -105,7 +111,7 @@ class Portal:
 
     def draw_exit_portal(self):
         """ Blit surface that represents character. """
-        self.rect = pg.Rect(self.exit_portalX  - (self.size/4), self.exit_portalY - (self.size/4), self.size*1/2, self.size*1/2)
+        self.exit_rect = pg.Rect(self.exit_portalX  - (self.size/4), self.exit_portalY - (self.size/4), self.size*1/2, self.size*1/2)
         self.spin_portal()
         #Draw and blit character to screen
         screen.blit(self.sprite,(self.exit_portalX - self.size/2, self.exit_portalY - self.size/2))
@@ -228,14 +234,14 @@ class Character():
 
 
     def button(msg,x,y,w,h,ic,ac):
-        mouse = pg.mouse.get_pos()
+        mouse = pygame.mouse.get_pos()
 
         if x+w > mouse[0] > x and y+h > mouse[1] > y:
-            pg.draw.rect(gameDisplay, ac,(x,y,w,h))
+            pygame.draw.rect(gameDisplay, ac,(x,y,w,h))
         else:
-            pg.draw.rect(gameDisplay, ic,(x,y,w,h))
+            pygame.draw.rect(gameDisplay, ic,(x,y,w,h))
 
-        smallText = pg.font.Font("freesansbold.ttf",20)
+        smallText = pygame.font.Font("freesansbold.ttf",20)
         textSurf, textRect = text_objects(msg, smallText)
         textRect.center = ( (x+(w/2)), (y+(h/2)) )
         gameDisplay.blit(textSurf, textRect)
@@ -297,8 +303,7 @@ class Character():
             #Starts a new jump
             self.v = -60
             self.score+=1
-            obj_list.remove(obj_list[self.current_plat])
-
+            #obj_list.remove(obj_list[self.current_plat])
 
     def portal_detection(self,other):
         if map.portal_active == False:
@@ -360,7 +365,10 @@ class Map:
         self.height = screen_height
         self.portal_active = False
         self.background_image = pg.image.load('sprites/Brocollli.png')
-        self.stretched_bg = pg.transform.scale(self.background_image,(screen_width,screen_height))
+        self.stretched_bg = pg.transform.scale(self.background_image,(screen_width,int(screen_height * 2/3)))
+        self.bgx1 = 600
+        self.bgx2 = 0
+        self.bgx3 = -600
 
 
     def initialize(self):
@@ -371,33 +379,42 @@ class Map:
         """
         self.generate_plat(150, 850)
         self.generate_plat(450, 850)
-        for num in range(100,900,self.spacing):
+        for num in range(100,1400,self.spacing):
             self.plats_at_height(900-num,3)
 
     def background(self):
+        if not portal.teleport_started:
+            self.bgx1 += self.scroll*0.5
+            self.bgx2 += self.scroll*0.5
+            self.bgx3 += self.scroll*0.5
+        screen.blit(map.stretched_bg,(0,self.bgx3))
+        screen.blit(map.stretched_bg,(0,self.bgx2))
+        screen.blit(map.stretched_bg,(0,self.bgx1))
+        if self.bgx3 >= 0:
+            self.bgx1 = 600
+            self.bgx2 = 0
+            self.bgx3 = -600
 
-        pass
 
-
-    def plats_at_height(self, x, freq_double_plats):
+    def plats_at_height(self, y, freq_double_plats):
         """Create new platform object at specified Y coordinate
 
         Append platform object to platform object list. Draw the new platform on the screen.
 
         Parameter
         ----------
-        x: int
-            X coordinate of center of new platform
+        y: int
+            Y coordinate of center of new platform
         freq_double_plats: int
             1 in int chance of double plat at given x height
         """
         rando_placement = random.randint(15, screen_width -15)
-        self.generate_plat(rando_placement, x)
+        self.generate_plat(rando_placement, y)
         if random.randint(1,freq_double_plats) == 1:
             second_rando = random.randint(15 ,screen_width-15)
             while abs(rando_placement - second_rando) <= 120:
                 second_rando = random.randint(15,screen_width-15)
-            self.generate_plat(second_rando, x)
+            self.generate_plat(second_rando, y)
 
     def generate_plat(self, x, y):
         """Create new platform object at specified Y coordinate
@@ -433,7 +450,7 @@ class Map:
 
     def proximity_check(self):
         """Check if there is self.spacing distance between the top platform and the top of the screen"""
-        if self.plat_obj[-1].position < self.spacing-20:
+        if self.plat_obj[-1].position < -350 + self.spacing -10:
             return False
         else:
             return True
@@ -447,59 +464,15 @@ class Map:
 
     def new_plat(self):
         if self.proximity_check():
-            self.plats_at_height(-10, 3)
+            self.plats_at_height(-355, 3)
 
     def call_portal(self):
-        while self.height == screen_height:
-            return
-        if not self.portal_active and random.randint(0,350) == 22:
+        if not self.portal_active and random.randint(0,450) == 22:
             self.portal_active = True
             portal.x = random.randint(20, screen_width-20)
-            portal.y = random.randint(-70,-20)
-            portal.rect = pg.Rect(portal.x  - (portal.size/2), portal.y - (portal.size/2), portal.size, portal.size)
+            portal.y = -70
+            portal.rect = pg.Rect(portal.x  - (portal.size/4), portal.y - (portal.size/4), portal.size*1/2, portal.size*1/2)
 
-<<<<<<< HEAD
-=======
-
-    def score_board(self):
-        red_text = '%s has %d points!' % (red.name, red.score)
-        red_score = font.render(red_text, False, red.color, GREY)
-        screen.blit(red_score,(360,20))
-        blue_text = '%s has %d points!' % (blue.name, blue.score)
-        blue_score = font.render(blue_text, False, blue.color, GREY)
-        screen.blit(blue_score,(30,20))
-
-    def paused(self):
-
-        largeText = pg.font.SysFont("comicsansms",115)
-        # TextSurf, TextRect = text_objects("Paused", largeText)
-        # TextRect.center = ((display_width/2),(display_height/2))
-        # gameDisplay.blit(TextSurf, TextRect)
-
-
-        while pause:
-            for event in pg.event.get():
-
-                if event.type == pg.QUIT:
-                    pg.quit()
-                    quit()
-
-            screen.fill(WHITE)
-            printtext(largeText,"Paused",75,400,RED)
-
-        #button("Continue",150,450,100,50,green,bright_green,unpause)
-        #button("Quit",550,450,100,50,red,bright_red,quitgame)
-
-            pg.display.update()
-            clock.tick(15)
-
-    def reset(self):
-        self.__init__()
-        self.initialize()
-        red.__init__('Red',RED, pg.K_LEFT, pg.K_RIGHT,2, 450, score = 0)
-        blue.__init__('Blue', BLUE, pg.K_a, pg.K_d,1, score = 0)
-
->>>>>>> d1655bd02a53d4dce68a919113f7d4e06d487a0b
     def run_map(self):
         """Run it all"""
         self.draw_map()
@@ -510,15 +483,19 @@ class Map:
 
 class Game:
     def __init__(self):
-        self.teleport_started = False
+        pass
 
     def score_board(self):
-        fred_text = '%s has %d points!' % (fred.name, fred.score)
-        fred_score = font.render(fred_text, False, fred.color, GREY)
-        screen.blit(fred_score,(360,20))
-        george_text = '%s has %d points!' % (george.name, george.score)
-        george_score = font.render(george_text, False, george.color, GREY)
-        screen.blit(george_score,(30,20))
+        george_head = pg.transform.scale(pg.image.load('sprites/Head1.png'),(50,50))
+        george_score = font1.render(str(george.score), True, SUNBLEACHEDGRAPE)
+        screen.blit(george_score,(80,15))
+        screen.blit(george_head,(20,10))
+
+        fred_head = pg.transform.scale(pg.image.load('sprites/Head2.png'),(50,50))
+        fred_score = font1.render(str(fred.score), True, SUNBLEACHEDGRAPE)
+        screen.blit(fred_score,(530,15))
+        screen.blit(fred_head,(470,5))
+
 
     def reset(self):
         map.__init__()
@@ -547,25 +524,12 @@ class Game:
         self.portal_hit_who()
 
 
-<<<<<<< HEAD
 play = Game()
 map = Map()
 map.initialize()
 portal = Portal()
 fred = Character('Fred',RED, pg.K_LEFT, pg.K_RIGHT, 2 ,450)
 george = Character('George', BLUE, pg.K_a, pg.K_d, 1)
-=======
-map = Map()
-map.initialize()
-portal = Portal()
-red = Character('Player1',RED, pg.K_LEFT, pg.K_RIGHT, 2 ,450)
-blue = Character('Player2', BLUE, pg.K_a, pg.K_d, 1)
-
-
-
-pause = False
-
->>>>>>> d1655bd02a53d4dce68a919113f7d4e06d487a0b
 
 
 # -------- Main Program Loop -----------
@@ -573,29 +537,17 @@ while not done:
     for event in pg.event.get():
         if event.type == pg.QUIT:
             done = True
-        if event.type == pg.KEYDOWN:
-            if event.key == pg.K_p:
-                print('pause')
-                pause = True
-                map.paused()
+
         #Escape key alternative way to end game
         if event.type == pg.KEYDOWN:
             if event.key == pg.K_ESCAPE:
                 done = True
-<<<<<<< HEAD
             if event.key == pg.K_k:
                 play.reset()
-=======
-        if pause == True:
-
-            if event.type == pg.KEYDOWN:
-                if event.key == pg.K_p:
-                    pause = False
-                    print('resume')
->>>>>>> d1655bd02a53d4dce68a919113f7d4e06d487a0b
     # Clears old screen
-    screen.blit(map.stretched_bg,(0,0))
 
+
+    map.background()
 
     # Limit frames per second
     tick = clock.tick(FPS)
