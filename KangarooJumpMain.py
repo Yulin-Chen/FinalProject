@@ -9,9 +9,6 @@ BLACK = (0, 0, 0)
 GREY = (170, 174, 181)
 RED = (255, 0, 0)
 BLUE = (0, 0, 255)
-GINGER = (224, 72, 6)
-ORANGE = (247, 160, 0)
-DRIEDBLOOD = (147, 0, 0)
 LUSHGREEN = (0, 158, 26)
 VELVET = (71, 4, 114)
 BLU = (57, 33, 239)
@@ -37,7 +34,7 @@ done = False
 clock = pg.time.Clock()
 FPS = 60
 
-
+#initialize fonts
 font = pg.font.SysFont('stkaiti', 40, True)
 font1 = pg.font.SysFont('stkaiti', 60, True)
 font2 = pg.font.SysFont('stkaiti',120)
@@ -51,10 +48,8 @@ def printtext(font,text,x,y,color):
 
 
 class Platform:
-    """Create a new platform
+    """Define a platform"""
 
-    """
-    #Initialize platform attributes
     def __init__(self):
         self.width = 120
         self.height = 15
@@ -74,52 +69,59 @@ class Platform:
         """
         self.x = x
         self.y = y
+        #Rect around sprite, used for collision detection
         self.rect = pg.Rect(self.x  - (self.width/2), self.y - (self.height/2), self.width, self.height)
-        # Blits surface to screen
+        #Helps track platforms
         self.top = self.rect.top
         self.position = self.top - int(self.height/2)
+        #Blit platform onto scree
         screen.blit(self.plat,(self.x  - (self.width/2), self.y - (self.height/2)))
 
 class Portal:
-    """Creates portal sprites. These switch the two kangaroos locations.
+    """Define a portal.
 
-    """
+    Portals switch the characters positions when collided with"""
+
     def __init__(self):
         self.size = 100
         self.x = 300
         self.y = 400
-        self.position = 11
-        self.frame_counter = 0
+        self.rect = pg.Rect(self.x  - (self.size/4), self.y - (self.size/4), self.size*1/2, self.size*1/2)
+        #List of rotation positions
         self.sprite_list = []
-        self.animation_rate = 7
+        #list index for sprite position (rotation)
+        self.position = 11
+        #fills list with rotated sprite surfaces
         for i in range(1,13):
             self.sprite_list.append(pg.transform.scale(pg.image.load('sprites/portalRotations/position%d.png' % i),(self.size,self.size)))
+        self.animation_rate = 7
+        self.frame_counter = 0
         self.teleport_started = False
         self.exit_portalX = 0
         self.exit_portalY = 0
-        self.rect = pg.Rect(self.x  - (self.size/4), self.y - (self.size/4), self.size*1/2, self.size*1/2)
-
+        self.sound = pg.mixer.Sound('sprites/Sounds/portal.wav')
+        self.sound.set_volume(1)
 
 
     def draw_portal(self, x, y):
-        """ Blit surface that represents character. """
+        """ Move and blit portal to screen"""
         self.x = x
         self.y = y
         self.rect = pg.Rect(self.x  - (self.size/4), self.y - (self.size/4), self.size*1/2, self.size*1/2)
         self.spin_portal()
-        #Draw and blit character to screen
         screen.blit(self.sprite,(self.x - self.size/2, self.y - self.size/2))
 
     def draw_exit_portal(self):
-        """ Blit surface that represents character. """
+        """ Create exit portal and blit"""
         self.exit_rect = pg.Rect(self.exit_portalX  - (self.size/4), self.exit_portalY - (self.size/4), self.size*1/2, self.size*1/2)
         self.spin_portal()
-        #Draw and blit character to screen
         screen.blit(self.sprite,(self.exit_portalX - self.size/2, self.exit_portalY - self.size/2))
 
     def spin_portal(self):
+        """Iterate through sprite_list to animate spinning portal"""
         self.frame_counter += 1
         self.sprite = self.sprite_list[self.position]
+        #Set speed of spinning
         if self.frame_counter % self.animation_rate == 0:
             self.position -=1
         if self.position == -1:
@@ -130,22 +132,27 @@ class Portal:
 
         Parameter
         ----------
-        primary: name of instance hitting portal
-        secondary: name of opponent instance
+        primary: name of kangaroo instance hitting portal
+        secondary: name of kangaroo opponent instance
         """
+        #Set initial conditions
         if not self.teleport_started:
             self.exit_portalX = secondary.x
             self.exit_portalY = secondary.y
             self.teleport_started = True
             primary.entering = True
+            self.sound.play()
         portal.draw_exit_portal()
+        #Entrance sequence
         if primary.size > 10 and primary.entering == True:
             primary.enter_portal(self.x,self.y)
             secondary.enter_portal(self.exit_portalX,self.exit_portalY)
+        #Exit sequence
         elif primary.size < 60:
             primary.entering = False
             primary.exit_portal(self.exit_portalX,self.exit_portalY)
             secondary.exit_portal(self.x,self.y)
+        #Reset all flags
         else:
             primary.hit_portal = False
             secondary.sucked_in = False
@@ -157,13 +164,27 @@ class Character():
     """Build character
 
     Create and add character to screen. Set constant jump. Move with arrow keys.
-    Detect collisions wih platforms and react appropriatley.
-
-    End Goal:
-    Currently the characters are represented as square surfaces.
+    Detect collisions and react appropriatley.
     """
 
     def __init__(self,name, color, left, right, sprite_num, x = 150, y = 820, score=0):
+        """ Initialize
+
+        Parameter
+        ----------
+        name: str
+            name of kangaroo
+        color: color (RGB)
+            kangaroo's text color
+        left: pygame.key
+            controls left motion
+        right: pygame.key
+        sprite_num: int
+        x: int
+        y: int
+        score: int
+            charcater score
+        """
         self.number = sprite_num
         self.name = name
         self.color = color
@@ -307,7 +328,7 @@ class Character():
             #Starts a new jump
             self.v = -60
             self.score+=1
-            #obj_list.remove(obj_list[self.current_plat])
+            obj_list.remove(obj_list[self.current_plat])
 
     def portal_detection(self,other):
         if map.portal_active == False:
@@ -539,7 +560,6 @@ class Game:
             fred.sucked_in = True
             portal.portal_event(george, fred)
 
-
     def run_game (self):
         map.run_map()
         self.score_board()
@@ -547,6 +567,10 @@ class Game:
         fred.run_character(george)
         self.portal_hit_who()
 
+
+pg.mixer.music.set_volume(0.2)
+pg.mixer.music.load('sprites/Sounds/bgm.ogg')
+pg.mixer.music.play(-1)
 
 play = Game()
 map = Map()
@@ -561,7 +585,8 @@ startgame = False
 
 # -------- Main Program Loop -----------
 while not done:
-    while (startgame == False):
+
+    while startgame == False:
         screen.fill(WHITE)
         printtext(largerText,"Welcome to",80,200,RED)
         printtext(largeText,"Kangaroo Jump",90,300,BLUE)
@@ -569,46 +594,45 @@ while not done:
         fred.draw_character()
         george.draw_character()
         pg.display.update()
+
         for event in pg.event.get():
             if event.type == pg.MOUSEBUTTONDOWN:
                 startgame = True
+            if event.type == pg.QUIT:
+                done = True
+            if event.type == pg.KEYDOWN:
+                if event.key == pg.K_ESCAPE:
+                    done = True
+
     for event in pg.event.get():
         if event.type == pg.QUIT:
             done = True
         if event.type == pg.KEYDOWN:
             if event.key == pg.K_p:
                 pause = not pause
-        #Escape key alternative way to end game
-        if event.type == pg.KEYDOWN:
             if event.key == pg.K_ESCAPE:
                 done = True
             if event.key == pg.K_r:
                 play.reset()
-    # Clears old screen
-
-    if(startgame == True):
-        # Clears old screen
-        map.background()
 
 
-
-    # Limit frames per second
-    tick = clock.tick(FPS)
-    play.run_game()
-    #screen.blit(fred.portal_sprite_list[0],(410, 785))
-
+    if startgame == True:
         # Limit frames per second
         tick = clock.tick(FPS)
 
+        # Clears old screen
+        map.background()
         play.run_game()
-        #screen.blit(fred.portal_sprite_list[0],(410, 785))
-        # while pause == True:
-        #     map.paused()
-        #     fred.freeze()
-        #     george.freeze()
-        #     if event.type == pg.KEYDOWN:
-        #         if event.key == pg.K_p:
-        #             pause = False
+
+
+
+    while pause == True:
+        map.paused()
+        fred.freeze()
+        george.freeze()
+        if event.type == pg.KEYDOWN:
+            if event.key == pg.K_p:
+                pause = False
 
 
         #Update the screen
