@@ -162,14 +162,14 @@ class Character():
         pg.display.update()
 
     def button(msg,x,y,w,h,ic,ac):
-        mouse = pygame.mouse.get_pos()
+        mouse = pg.mouse.get_pos()
 
         if x+w > mouse[0] > x and y+h > mouse[1] > y:
-            pygame.draw.rect(gameDisplay, ac,(x,y,w,h))
+            pg.draw.rect(gameDisplay, ac,(x,y,w,h))
         else:
-            pygame.draw.rect(gameDisplay, ic,(x,y,w,h))
+            pg.draw.rect(gameDisplay, ic,(x,y,w,h))
 
-        smallText = pygame.font.Font("freesansbold.ttf",20)
+        smallText = pg.font.Font("freesansbold.ttf",20)
         textSurf, textRect = text_objects(msg, smallText)
         textRect.center = ( (x+(w/2)), (y+(h/2)) )
         gameDisplay.blit(textSurf, textRect)
@@ -379,6 +379,29 @@ class Map:
         blue_score = font.render(blue_text, False, blue.color, GREY)
         screen.blit(blue_score,(30,20))
 
+    def paused(self):
+
+        largeText = pg.font.SysFont("comicsansms",115)
+        # TextSurf, TextRect = text_objects("Paused", largeText)
+        # TextRect.center = ((display_width/2),(display_height/2))
+        # gameDisplay.blit(TextSurf, TextRect)
+
+
+        while pause:
+            for event in pg.event.get():
+
+                if event.type == pg.QUIT:
+                    pg.quit()
+                    quit()
+
+            screen.fill(WHITE)
+            printtext(largeText,"Paused",75,400,RED)
+
+        #button("Continue",150,450,100,50,green,bright_green,unpause)
+        #button("Quit",550,450,100,50,red,bright_red,quitgame)
+
+            pg.display.update()
+            clock.tick(15)
 
     def reset(self):
         self.__init__()
@@ -396,11 +419,16 @@ class Map:
 
 
 
+
 map = Map()
 map.initialize()
 portal = Portal()
-red = Character('Red',RED, pg.K_LEFT, pg.K_RIGHT, 2 ,450)
-blue = Character('Blue', BLUE, pg.K_a, pg.K_d, 1)
+red = Character('Player1',RED, pg.K_LEFT, pg.K_RIGHT, 2 ,450)
+blue = Character('Player2', BLUE, pg.K_a, pg.K_d, 1)
+
+
+
+pause = False
 
 
 
@@ -409,12 +437,21 @@ while not done:
     for event in pg.event.get():
         if event.type == pg.QUIT:
             done = True
-
+        if event.type == pg.KEYDOWN:
+            if event.key == pg.K_p:
+                print('pause')
+                pause = True
+                map.paused()
         #Escape key alternative way to end game
         if event.type == pg.KEYDOWN:
             if event.key == pg.K_ESCAPE:
                 done = True
+        if pause == True:
 
+            if event.type == pg.KEYDOWN:
+                if event.key == pg.K_p:
+                    pause = False
+                    print('resume')
     # Clears old screen
     screen.fill(WHITE)
 
