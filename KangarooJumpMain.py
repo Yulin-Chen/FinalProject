@@ -34,6 +34,7 @@ done = False
 
 # Used to manage how fast the screen updates
 clock = pg.time.Clock()
+FPS = 60
 
 font = pg.font.SysFont('chandas', 20, True)
 font2 = pg.font.SysFont('stkaiti',120)
@@ -42,6 +43,8 @@ font3 = pg.font.SysFont('stkaiti',60)
 def printtext(font,text,x,y,color):
     img = font.render(text,True,color)
     screen.blit(img,(x,y))
+
+
 
 class Platform:
     """Create a new platform
@@ -78,17 +81,69 @@ class Portal:
 
     """
     def __init__(self):
-        self.size = 80
-        self.image = pg.image.load('sprites/portal2.png')
-        self.portal = pg.transform.scale(self.image,(self.size,self.size))
+        self.size = 100
+        self.x = 300
+        self.y = 400
+        self.position = 11
+        self.frame_counter = 0
+        self.sprite_list = []
+        self.animation_rate = 7
+        for i in range(1,13):
+            self.sprite_list.append(pg.transform.scale(pg.image.load('sprites/portalRotations/position%d.png' % i),(self.size,self.size)))
+        self.teleport_started = False
+        self.exit_portalX = 0
+        self.exit_portalY = 0
 
     def draw_portal(self, x, y):
         """ Blit surface that represents character. """
         self.x = x
         self.y = y
-        self.rect = pg.Rect(self.x  - (self.size/2), self.y - (self.size/2), self.size, self.size)
+        self.rect = pg.Rect(self.x  - (self.size/4), self.y - (self.size/4), self.size*1/2, self.size*1/2)
+        self.spin_portal()
         #Draw and blit character to screen
-        screen.blit(self.portal,(self.x - self.size/2, self.y - self.size/2))
+        screen.blit(self.sprite,(self.x - self.size/2, self.y - self.size/2))
+
+    def draw_exit_portal(self):
+        """ Blit surface that represents character. """
+        self.rect = pg.Rect(self.exit_portalX  - (self.size/4), self.exit_portalY - (self.size/4), self.size*1/2, self.size*1/2)
+        self.spin_portal()
+        #Draw and blit character to screen
+        screen.blit(self.sprite,(self.exit_portalX - self.size/2, self.exit_portalY - self.size/2))
+
+    def spin_portal(self):
+        self.frame_counter += 1
+        self.sprite = self.sprite_list[self.position]
+        if self.frame_counter % self.animation_rate == 0:
+            self.position -=1
+        if self.position == -1:
+            self.position = 11
+
+    def portal_event(self, primary, secondary):
+        """ Reacts to a portal being hit by a player
+
+        Parameter
+        ----------
+        primary: name of instance hitting portal
+        secondary: name of opponent instance
+        """
+        if not self.teleport_started:
+            self.exit_portalX = secondary.x
+            self.exit_portalY = secondary.y
+            self.teleport_started = True
+            primary.entering = True
+        portal.draw_exit_portal()
+        if primary.size > 10 and primary.entering == True:
+            primary.enter_portal(self.x,self.y)
+            secondary.enter_portal(self.exit_portalX,self.exit_portalY)
+        elif primary.size < 60:
+            primary.entering = False
+            primary.exit_portal(self.exit_portalX,self.exit_portalY)
+            secondary.exit_portal(self.x,self.y)
+        else:
+            primary.hit_portal = False
+            secondary.sucked_in = False
+            map.portal_active = False
+            self.teleport_started = False
 
 
 class Character():
@@ -101,7 +156,8 @@ class Character():
     Currently the characters are represented as square surfaces.
     """
 
-    def __init__(self,name, color, left, right, sprite_num, x = 150, y = 825, score=0):
+    def __init__(self,name, color, left, right, sprite_num, x = 150, y = 820, score=0):
+        self.number = sprite_num
         self.name = name
         self.color = color
         self.left = left
@@ -112,13 +168,21 @@ class Character():
         self.v = -60
         self.g = 9.81
         self.delta_y = 0
-        self.imageR = pg.image.load('sprites/Kanga%dR.png' % sprite_num)
-        self.imageL = pg.image.load('sprites/Kanga%dL.png' % sprite_num)
+        self.imageR = pg.image.load('sprites/Kanga%dR.png' % self.number)
+        self.imageL = pg.image.load('sprites/Kanga%dL.png' % self.number)
         self.spriteR = pg.transform.scale(self.imageR,(self.size,self.size))
         self.spriteL = pg.transform.scale(self.imageL,(self.size,self.size))
         self.going_right = True
         self.score = score
-
+        self.hit_portal = False
+        self.sucked_in = False
+        self.entering = False
+        self.frame_counter = 0
+        self.portal_sprite_list = []
+        self.animation_rate = 3
+        self.spin_position = 0
+        for i in range(1,13):
+            self.portal_sprite_list.append(pg.transform.scale(pg.image.load('sprites/Kanga%dRots/position%d.png' % (self.number,i)),(int(self.size*1.3),int(self.size*1.3))))
 
     def draw_character(self):
         """ Blit surface that represents character. """
@@ -159,7 +223,9 @@ class Character():
         printtext(font,'%s got %d points' % (other.name, other.score),200,550,other.color)
         printtext(font,'%s got %d points' % (self.name, self.score),200,600,self.color)
 
+
         pg.display.update()
+
 
     def button(msg,x,y,w,h,ic,ac):
         mouse = pygame.mouse.get_pos()
@@ -182,12 +248,12 @@ class Character():
         off a side they loop to the other side.
         """
         if self.y >= screen_height:
-            self.y = 825
-            #self.end_screen(other)
             other.score += 1
             self.game_over(other)
-            pg.time.wait(1000)
-            map.reset()
+            clock.tick(1)
+            #pg.time.wait(1000)
+            play.reset()
+
 
         if self.x > screen_width:
             self.x = 0
@@ -240,13 +306,30 @@ class Character():
         else:
             self.rect = pg.Rect(self.x  - (self.size/2), self.y - (self.size/2), self.size, self.size)
             if self.rect.colliderect(portal.rect):
-                tempx = other.x
-                tempy = other.y
-                other.x = self.x
-                other.y = self.y
-                self.x = tempx
-                self. y = tempy
-                map.portal_active = False
+                self.hit_portal = True
+
+    def spin_kanga(self):
+        self.frame_counter += 1
+        self.sprite = self.portal_sprite_list[self.spin_position]
+        if self.frame_counter % self.animation_rate == 0:
+            self.spin_position +=1
+        if self.spin_position == 12:
+            self.spin_position = 0
+        return self.sprite
+
+    def enter_portal(self, portalX, portalY):
+        self.x = portalX
+        self.y = portalY
+        self.size -= 1
+        sprite = pg.transform.scale(self.spin_kanga(), (self.size, self.size))
+        screen.blit(sprite,(self.x - self.size/2, self.y - self.size/2))
+
+    def exit_portal(self, exit_portalX, exit_portalY):
+        self.x = exit_portalX
+        self.y = exit_portalY
+        self.size += 1
+        sprite = pg.transform.scale(self.spin_kanga(), (self.size, self.size))
+        screen.blit(sprite,(self.x - self.size/2, self.y - self.size/2))
 
 
     def run_character(self,other):
@@ -254,12 +337,13 @@ class Character():
 
         other = other character name
         """
-        self.draw_character()
-        self.move()
-        self.boundry_detection(other)
-        self.scroll_detection(other)
-        self.collision_detection(map.plat_obj)
-        self.portal_detection(other)
+        if not self.hit_portal and not self.sucked_in:
+            self.draw_character()
+            self.move()
+            self.boundry_detection(other)
+            self.scroll_detection(other)
+            self.collision_detection(map.plat_obj)
+            self.portal_detection(other)
 
 
 class Map:
@@ -273,9 +357,11 @@ class Map:
         self.scroll_point = 200
         self.scroll = 0
         self.plat_obj = []
-        self.portal_obj = []
         self.height = screen_height
         self.portal_active = False
+        self.background_image = pg.image.load('sprites/Brocollli.png')
+        self.stretched_bg = pg.transform.scale(self.background_image,(screen_width,screen_height))
+
 
     def initialize(self):
         """Set starting screen with platforms.
@@ -287,6 +373,11 @@ class Map:
         self.generate_plat(450, 850)
         for num in range(100,900,self.spacing):
             self.plats_at_height(900-num,3)
+
+    def background(self):
+
+        pass
+
 
     def plats_at_height(self, x, freq_double_plats):
         """Create new platform object at specified Y coordinate
@@ -307,8 +398,6 @@ class Map:
             while abs(rando_placement - second_rando) <= 120:
                 second_rando = random.randint(15,screen_width-15)
             self.generate_plat(second_rando, x)
-
-
 
     def generate_plat(self, x, y):
         """Create new platform object at specified Y coordinate
@@ -360,48 +449,68 @@ class Map:
         if self.proximity_check():
             self.plats_at_height(-10, 3)
 
-
-    def generate_portal(self):
+    def call_portal(self):
         while self.height == screen_height:
             return
-        if not self.portal_active and random.randint(0,300) == 7:
+        if not self.portal_active and random.randint(0,350) == 22:
             self.portal_active = True
             portal.x = random.randint(20, screen_width-20)
             portal.y = random.randint(-70,-20)
             portal.rect = pg.Rect(portal.x  - (portal.size/2), portal.y - (portal.size/2), portal.size, portal.size)
-
-
-    def score_board(self):
-        red_text = '%s has %d points!' % (red.name, red.score)
-        red_score = font.render(red_text, False, red.color, GREY)
-        screen.blit(red_score,(360,20))
-        blue_text = '%s has %d points!' % (blue.name, blue.score)
-        blue_score = font.render(blue_text, False, blue.color, GREY)
-        screen.blit(blue_score,(30,20))
-
-
-    def reset(self):
-        self.__init__()
-        self.initialize()
-        red.__init__('Red',RED, pg.K_LEFT, pg.K_RIGHT,2, 450, score = 0)
-        blue.__init__('Blue', BLUE, pg.K_a, pg.K_d,1, score = 0)
 
     def run_map(self):
         """Run it all"""
         self.draw_map()
         self.off_the_edge()
         self.new_plat()
-        self.generate_portal()
+        self.call_portal()
+
+
+class Game:
+    def __init__(self):
+        self.teleport_started = False
+
+    def score_board(self):
+        fred_text = '%s has %d points!' % (fred.name, fred.score)
+        fred_score = font.render(fred_text, False, fred.color, GREY)
+        screen.blit(fred_score,(360,20))
+        george_text = '%s has %d points!' % (george.name, george.score)
+        george_score = font.render(george_text, False, george.color, GREY)
+        screen.blit(george_score,(30,20))
+
+    def reset(self):
+        map.__init__()
+        map.initialize()
+        fred.__init__('Fred',RED, pg.K_LEFT, pg.K_RIGHT,2, 450, score = 0)
+        george.__init__('George', BLUE, pg.K_a, pg.K_d,1, score = 0)
+        portal.__init__()
+
+
+    def portal_hit_who(self):
+        if fred.hit_portal == False and george.hit_portal == False:
+            return
+        elif fred.hit_portal:
+            george.sucked_in = True
+            portal.portal_event(fred,george)
+        else:
+            fred.sucked_in = True
+            portal.portal_event(george, fred)
+
+
+    def run_game (self):
+        map.run_map()
         self.score_board()
+        george.run_character(fred)
+        fred.run_character(george)
+        self.portal_hit_who()
 
 
-
+play = Game()
 map = Map()
 map.initialize()
 portal = Portal()
-red = Character('Red',RED, pg.K_LEFT, pg.K_RIGHT, 2 ,450)
-blue = Character('Blue', BLUE, pg.K_a, pg.K_d, 1)
-
+fred = Character('Fred',RED, pg.K_LEFT, pg.K_RIGHT, 2 ,450)
+george = Character('George', BLUE, pg.K_a, pg.K_d, 1)
 
 
 # -------- Main Program Loop -----------
@@ -414,19 +523,16 @@ while not done:
         if event.type == pg.KEYDOWN:
             if event.key == pg.K_ESCAPE:
                 done = True
-
+            if event.key == pg.K_k:
+                play.reset()
     # Clears old screen
-    screen.fill(WHITE)
+    screen.blit(map.stretched_bg,(0,0))
 
 
     # Limit frames per second
-    tick = clock.tick(60)
-
-
-    map.run_map()
-    blue.run_character(red)
-    red.run_character(blue)
-
+    tick = clock.tick(FPS)
+    play.run_game()
+    #screen.blit(fred.portal_sprite_list[0],(410, 785))
 
     #Update the screen
     pg.display.flip()
