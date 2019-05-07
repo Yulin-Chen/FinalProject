@@ -39,7 +39,8 @@ FPS = 60
 font = pg.font.SysFont('chandas', 20, True)
 font2 = pg.font.SysFont('stkaiti',120)
 font3 = pg.font.SysFont('stkaiti',60)
-
+largerText = pg.font.SysFont("comicsansms",115)
+largeText = pg.font.SysFont("comicsansms",80)
 def printtext(font,text,x,y,color):
     img = font.render(text,True,color)
     screen.blit(img,(x,y))
@@ -218,14 +219,14 @@ class Character():
         winnercolor = other.color
         screen.fill(WHITE)
         printtext(font2,"GAMEOVER",75,300,losercolor)
-        printtext(font3, other.name +" "+"Wins!!",200,500,winnercolor)
+        printtext(font3, other.name +" "+"Wins!!",160,500,winnercolor)
         #button("Restart", 210,700,30,160,RED,ORANGE)
-        printtext(font,'%s got %d points' % (other.name, other.score),200,550,other.color)
-        printtext(font,'%s got %d points' % (self.name, self.score),200,600,self.color)
+        printtext(font,'%s got %d points' % (other.name, other.score),180,550,other.color)
+        printtext(font,'%s got %d points' % (self.name, self.score),180,600,self.color)
 
 
         pg.display.update()
-
+        clock.tick(50)
 
     def button(msg,x,y,w,h,ic,ac):
         mouse = pg.mouse.get_pos()
@@ -275,6 +276,9 @@ class Character():
             self.y += map.scroll
             self.draw_character()
 
+    def freeze(self):
+        self.x = self.x
+        self.y = self.y
 
     def collision_detection(self, obj_list):
         """Checks for collison with platforms and adjusts accordingly. """
@@ -458,9 +462,6 @@ class Map:
             portal.y = random.randint(-70,-20)
             portal.rect = pg.Rect(portal.x  - (portal.size/2), portal.y - (portal.size/2), portal.size, portal.size)
 
-<<<<<<< HEAD
-=======
-
     def score_board(self):
         red_text = '%s has %d points!' % (red.name, red.score)
         red_score = font.render(red_text, False, red.color, GREY)
@@ -470,21 +471,16 @@ class Map:
         screen.blit(blue_score,(30,20))
 
     def paused(self):
-
-        largeText = pg.font.SysFont("comicsansms",115)
         # TextSurf, TextRect = text_objects("Paused", largeText)
         # TextRect.center = ((display_width/2),(display_height/2))
         # gameDisplay.blit(TextSurf, TextRect)
-
-
-        while pause:
+        if pause == True:
             for event in pg.event.get():
-
                 if event.type == pg.QUIT:
                     pg.quit()
                     quit()
 
-            screen.fill(WHITE)
+
             printtext(largeText,"Paused",75,400,RED)
 
         #button("Continue",150,450,100,50,green,bright_green,unpause)
@@ -499,13 +495,13 @@ class Map:
         red.__init__('Red',RED, pg.K_LEFT, pg.K_RIGHT,2, 450, score = 0)
         blue.__init__('Blue', BLUE, pg.K_a, pg.K_d,1, score = 0)
 
->>>>>>> d1655bd02a53d4dce68a919113f7d4e06d487a0b
     def run_map(self):
         """Run it all"""
         self.draw_map()
         self.off_the_edge()
         self.new_plat()
         self.call_portal()
+
 
 
 class Game:
@@ -547,14 +543,14 @@ class Game:
         self.portal_hit_who()
 
 
-<<<<<<< HEAD
+
 play = Game()
 map = Map()
 map.initialize()
 portal = Portal()
 fred = Character('Fred',RED, pg.K_LEFT, pg.K_RIGHT, 2 ,450)
 george = Character('George', BLUE, pg.K_a, pg.K_d, 1)
-=======
+
 map = Map()
 map.initialize()
 portal = Portal()
@@ -564,46 +560,58 @@ blue = Character('Player2', BLUE, pg.K_a, pg.K_d, 1)
 
 
 pause = False
-
->>>>>>> d1655bd02a53d4dce68a919113f7d4e06d487a0b
+startgame = False
 
 
 # -------- Main Program Loop -----------
 while not done:
+    while (startgame == False):
+        screen.fill(WHITE)
+        printtext(largerText,"Welcome to",80,200,RED)
+        printtext(largeText,"Kangaroo Jump",90,300,BLUE)
+        printtext(font3,"click anywhere to start", 80, 500,BLACK)
+        pg.display.update()
+        for event in pg.event.get():
+            if event.type == pg.MOUSEBUTTONDOWN:
+                startgame = True
     for event in pg.event.get():
         if event.type == pg.QUIT:
             done = True
         if event.type == pg.KEYDOWN:
             if event.key == pg.K_p:
-                print('pause')
-                pause = True
-                map.paused()
+                pause = not pause
         #Escape key alternative way to end game
         if event.type == pg.KEYDOWN:
             if event.key == pg.K_ESCAPE:
                 done = True
-<<<<<<< HEAD
             if event.key == pg.K_k:
                 play.reset()
-=======
-        if pause == True:
-
-            if event.type == pg.KEYDOWN:
-                if event.key == pg.K_p:
-                    pause = False
-                    print('resume')
->>>>>>> d1655bd02a53d4dce68a919113f7d4e06d487a0b
     # Clears old screen
     screen.blit(map.stretched_bg,(0,0))
 
+    if(startgame == True):
+        # Clears old screen
+        screen.blit(map.stretched_bg,(0,0))
 
-    # Limit frames per second
-    tick = clock.tick(FPS)
-    play.run_game()
-    #screen.blit(fred.portal_sprite_list[0],(410, 785))
 
-    #Update the screen
+        # Limit frames per second
+        tick = clock.tick(FPS)
+
+        play.run_game()
+        #screen.blit(fred.portal_sprite_list[0],(410, 785))
+        # while pause == True:
+        #     map.paused()
+        #     fred.freeze()
+        #     george.freeze()
+        #     if event.type == pg.KEYDOWN:
+        #         if event.key == pg.K_p:
+        #             pause = False
+
+
+        #Update the screen
     pg.display.flip()
+
+
 
 # Close the window and quit.
 pg.quit()
