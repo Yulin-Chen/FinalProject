@@ -15,6 +15,8 @@ BLU = (57, 33, 239)
 WHITE = (255,255,255)
 MAGENTA = (160, 15, 196)
 SUNBLEACHEDGRAPE = (206, 132, 224)
+ORANGE = (224, 115, 0)
+GREEN = (76, 173, 94)
 
 #Initialize game
 pg.init()
@@ -41,6 +43,8 @@ font2 = pg.font.SysFont('stkaiti',120)
 font3 = pg.font.SysFont('stkaiti',60)
 largerText = pg.font.SysFont("comicsansms",115)
 largeText = pg.font.SysFont("comicsansms",80)
+
+
 def printtext(font,text,x,y,color):
     img = font.render(text,True,color)
     screen.blit(img,(x,y))
@@ -179,11 +183,15 @@ class Character():
         left: pygame.key
             controls left motion
         right: pygame.key
+            controls right motion
         sprite_num: int
+            which character it is
         x: int
+            x position
         y: int
+            y position
         score: int
-            charcater score
+            character score
         """
         self.number = sprite_num
         self.name = name
@@ -213,8 +221,8 @@ class Character():
             self.portal_sprite_list.append(pg.transform.scale(pg.image.load('sprites/Kanga%dRots/position%d.png' % (self.number,i)),(int(self.size*1.3),int(self.size*1.3))))
 
     def draw_character(self):
-        """ Blit surface that represents character. """
-        #Draw and blit character to screen
+        """ Blit character. """
+        #Determine which direction sprite faces
         if self.going_right:
             sprite = self.spriteR
         else:
@@ -242,31 +250,18 @@ class Character():
             self.going_right = True
 
     def game_over(self,other):
+        """Game over screen"""
+        #set text colors
         losercolor = self.color
         winnercolor = other.color
         screen.fill(WHITE)
         printtext(font2,"GAMEOVER",75,300,losercolor)
         printtext(font3, other.name +" "+"Wins!!",160,500,winnercolor)
-        #button("Restart", 210,700,30,160,RED,ORANGE)
         printtext(font,'%s got %d points' % (other.name, other.score),180,550,other.color)
         printtext(font,'%s got %d points' % (self.name, self.score),180,600,self.color)
 
-
         pg.display.update()
-        clock.tick(50)
-
-    def button(msg,x,y,w,h,ic,ac):
-        mouse = pygame.mouse.get_pos()
-
-        if x+w > mouse[0] > x and y+h > mouse[1] > y:
-            pygame.draw.rect(gameDisplay, ac,(x,y,w,h))
-        else:
-            pygame.draw.rect(gameDisplay, ic,(x,y,w,h))
-
-        smallText = pygame.font.Font("freesansbold.ttf",20)
-        textSurf, textRect = text_objects(msg, smallText)
-        textRect.center = ( (x+(w/2)), (y+(h/2)) )
-        gameDisplay.blit(textSurf, textRect)
+        clock.tick(60)
 
 
     def boundry_detection(self,other):
@@ -498,25 +493,6 @@ class Map:
             portal.y = -70
             portal.rect = pg.Rect(portal.x  - (portal.size/4), portal.y - (portal.size/4), portal.size*1/2, portal.size*1/2)
 
-    def paused(self):
-        # TextSurf, TextRect = text_objects("Paused", largeText)
-        # TextRect.center = ((display_width/2),(display_height/2))
-        # gameDisplay.blit(TextSurf, TextRect)
-        if pause == True:
-            for event in pg.event.get():
-                if event.type == pg.QUIT:
-                    pg.quit()
-                    quit()
-
-
-            printtext(largeText,"Paused",75,400,RED)
-
-        #button("Continue",150,450,100,50,green,bright_green,unpause)
-        #button("Quit",550,450,100,50,red,bright_red,quitgame)
-
-            pg.display.update()
-            clock.tick(15)
-
     def run_map(self):
         """Run it all"""
         self.draw_map()
@@ -608,8 +584,6 @@ while not done:
         if event.type == pg.QUIT:
             done = True
         if event.type == pg.KEYDOWN:
-            if event.key == pg.K_p:
-                pause = not pause
             if event.key == pg.K_ESCAPE:
                 done = True
             if event.key == pg.K_r:
@@ -623,17 +597,6 @@ while not done:
         # Clears old screen
         map.background()
         play.run_game()
-
-
-
-    while pause == True:
-        map.paused()
-        fred.freeze()
-        george.freeze()
-        if event.type == pg.KEYDOWN:
-            if event.key == pg.K_p:
-                pause = False
-
 
         #Update the screen
     pg.display.flip()
